@@ -36,6 +36,9 @@ import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepo
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ACTIVE_TASKS
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ALL_TASKS
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.COMPLETED_TASKS
+import kotlinx.coroutines.DisposableHandle
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -56,10 +59,14 @@ class TasksViewModel(
                 _dataLoading.value = false
             }
         }
-        tasksRepository.observeTasks().distinctUntilChanged().switchMap { filterTasks(it) }
+        tasksRepository.observeTasks().distinctUntilChanged().switchMap {
+            filterTasks(it)
+        }
     }
 
     val items: LiveData<List<Task>> = _items
+
+    private val deletionEvents : HashMap<String, DeletionEvent> = HashMap()
 
     private val _dataLoading = MutableLiveData<Boolean>()
     val dataLoading: LiveData<Boolean> = _dataLoading
@@ -200,7 +207,12 @@ class TasksViewModel(
         if (tasksResult is Success) {
             isDataLoadingError.value = false
             viewModelScope.launch {
-                result.value = filterItems(tasksResult.data, getSavedFilterType())
+                val filteritems = filterItems(tasksResult.data, getSavedFilterType())
+                result.value = filteritems
+                for (item in filteritems) {
+                    deletionEvents.put(item.id, DeletionEvent())
+                }
+
             }
         } else {
             result.value = emptyList()
@@ -243,10 +255,45 @@ class TasksViewModel(
         return savedStateHandle.get(TASKS_FILTER_SAVED_STATE_KEY) ?: ALL_TASKS
     }
 
+    private val jobs: HashMap<String, Job> = HashMap()
+
     fun deleteItem(task : Task) {
-        viewModelScope.launch {
-            tasksRepository.deleteTask(taskId = task.id)
+        val ldText = deletionEvents[task.id]?.buttonText
+        val ldCount = deletionEvents[task.id]?.countdownText
+
+
+        if (jobs.containsKey(task.id) && jobs[task.id]!!.isActive) {
+            jobs[task.id]?.cancel()
         }
+        else {
+            ldText?.value = "Undo"
+            val job = viewModelScope.launch {
+                for (second in 3 downTo  1) {
+                    ldCount?.postValue("$second - ")
+                    delay(1000)
+                }
+                tasksRepository.deleteTask(taskId = task.id)
+            }
+            job.invokeOnCompletion {
+                ldText?.value = "Delete"
+                ldCount?.value = ""
+            }
+            jobs[task.id] = job
+        }
+
+    }
+
+    fun getCountdownText(task : Task) : LiveData<String>? {
+        return deletionEvents?.get(task.id)?.countdownText
+    }
+
+    fun getDeletionEventText(task : Task) : LiveData<String>? {
+        return deletionEvents?.get(task.id)?.buttonText
+    }
+
+    inner class DeletionEvent() {
+        val buttonText = MutableLiveData("Delete")
+        val countdownText = MutableLiveData("adasda")
     }
 }
 

@@ -48,6 +48,13 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
             binding.viewmodel = viewModel
             binding.task = item
             binding.executePendingBindings()
+            viewModel.getCountdownText(item)?.observeForever {
+                binding.countdownText.text = it
+            }
+
+            viewModel.getDeletionEventText(item)?.observeForever {
+                binding.deleteButton.text = it
+            }
         }
 
         companion object {
