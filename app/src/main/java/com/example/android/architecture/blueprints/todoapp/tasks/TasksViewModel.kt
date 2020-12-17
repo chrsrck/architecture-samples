@@ -15,6 +15,7 @@
  */
 package com.example.android.architecture.blueprints.todoapp.tasks
 
+import android.database.Observable
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
@@ -240,6 +241,12 @@ class TasksViewModel(
 
     private fun getSavedFilterType() : TasksFilterType {
         return savedStateHandle.get(TASKS_FILTER_SAVED_STATE_KEY) ?: ALL_TASKS
+    }
+
+    fun deleteItem(task : Task) {
+        viewModelScope.launch {
+            tasksRepository.deleteTask(taskId = task.id)
+        }
     }
 }
 
