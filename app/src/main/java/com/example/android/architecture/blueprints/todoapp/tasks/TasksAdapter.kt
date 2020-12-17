@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.architecture.blueprints.todoapp.data.Task
+import com.example.android.architecture.blueprints.todoapp.data.TaskWrapper
 import com.example.android.architecture.blueprints.todoapp.databinding.TaskItemBinding
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksAdapter.ViewHolder
 
@@ -28,7 +29,7 @@ import com.example.android.architecture.blueprints.todoapp.tasks.TasksAdapter.Vi
  * Adapter for the task list. Has a reference to the [TasksViewModel] to send actions back to it.
  */
 class TasksAdapter(private val viewModel: TasksViewModel) :
-    ListAdapter<Task, ViewHolder>(TaskDiffCallback()) {
+    ListAdapter<TaskWrapper, ViewHolder>(TaskDiffCallback()) {
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
@@ -43,18 +44,11 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
     class ViewHolder private constructor(val binding: TaskItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(viewModel: TasksViewModel, item: Task) {
+        fun bind(viewModel: TasksViewModel, item: TaskWrapper) {
 
             binding.viewmodel = viewModel
-            binding.task = item
+            binding.taskWrapper = item
             binding.executePendingBindings()
-            viewModel.getCountdownText(item)?.observeForever {
-                binding.countdownText.text = it
-            }
-
-            viewModel.getDeletionEventText(item)?.observeForever {
-                binding.deleteButton.text = it
-            }
         }
 
         companion object {
@@ -66,6 +60,7 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
             }
         }
     }
+
 }
 
 /**
@@ -74,12 +69,13 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
  * Used by ListAdapter to calculate the minimum number of changes between and old list and a new
  * list that's been passed to `submitList`.
  */
-class TaskDiffCallback : DiffUtil.ItemCallback<Task>() {
-    override fun areItemsTheSame(oldItem: Task, newItem: Task): Boolean {
-        return oldItem.id == newItem.id
+class TaskDiffCallback : DiffUtil.ItemCallback<TaskWrapper>() {
+    override fun areItemsTheSame(oldItem: TaskWrapper, newItem: TaskWrapper): Boolean {
+        return oldItem.task.id == newItem.task.id
     }
 
-    override fun areContentsTheSame(oldItem: Task, newItem: Task): Boolean {
-        return oldItem == newItem
+    override fun areContentsTheSame(oldItem: TaskWrapper, newItem: TaskWrapper): Boolean {
+        return oldItem == newItem && oldItem.countdown == newItem.countdown
     }
+
 }

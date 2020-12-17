@@ -31,6 +31,7 @@ import com.example.android.architecture.blueprints.todoapp.R
 import com.example.android.architecture.blueprints.todoapp.data.Result
 import com.example.android.architecture.blueprints.todoapp.data.Result.Success
 import com.example.android.architecture.blueprints.todoapp.data.Task
+import com.example.android.architecture.blueprints.todoapp.data.TaskWrapper
 import com.example.android.architecture.blueprints.todoapp.data.source.TasksDataSource
 import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepository
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ACTIVE_TASKS
@@ -51,7 +52,7 @@ class TasksViewModel(
 
     private val _forceUpdate = MutableLiveData<Boolean>(false)
 
-    private val _items: LiveData<List<Task>> = _forceUpdate.switchMap { forceUpdate ->
+    private val _items: LiveData<List<TaskWrapper>> = _forceUpdate.switchMap { forceUpdate ->
         if (forceUpdate) {
             _dataLoading.value = true
             viewModelScope.launch {
@@ -64,9 +65,7 @@ class TasksViewModel(
         }
     }
 
-    val items: LiveData<List<Task>> = _items
-
-    private val deletionEvents : HashMap<String, DeletionEvent> = HashMap()
+    val items: LiveData<List<TaskWrapper>> = _items
 
     private val _dataLoading = MutableLiveData<Boolean>()
     val dataLoading: LiveData<Boolean> = _dataLoading
@@ -200,18 +199,15 @@ class TasksViewModel(
         _snackbarText.value = Event(message)
     }
 
-    private fun filterTasks(tasksResult: Result<List<Task>>): LiveData<List<Task>> {
+    private fun filterTasks(tasksResult: Result<List<Task>>): LiveData<List<TaskWrapper>> {
         // TODO: This is a good case for liveData builder. Replace when stable.
-        val result = MutableLiveData<List<Task>>()
+        val result = MutableLiveData<List<TaskWrapper>>()
 
         if (tasksResult is Success) {
             isDataLoadingError.value = false
             viewModelScope.launch {
-                val filteritems = filterItems(tasksResult.data, getSavedFilterType())
-                result.value = filteritems
-                for (item in filteritems) {
-                    deletionEvents.put(item.id, DeletionEvent())
-                }
+                val filtered = filterItems(tasksResult.data, getSavedFilterType())
+                result.value = filtered.map { TaskWrapper(it, 0) }
 
             }
         } else {
@@ -256,44 +252,30 @@ class TasksViewModel(
     }
 
     private val jobs: HashMap<String, Job> = HashMap()
+    val tickLiveData : MutableLiveData<List<TaskWrapper>> = MutableLiveData()
 
-    fun deleteItem(task : Task) {
-        val ldText = deletionEvents[task.id]?.buttonText
-        val ldCount = deletionEvents[task.id]?.countdownText
-
+    fun deleteItem(taskWrapper: TaskWrapper) {
+        val task = taskWrapper.task
 
         if (jobs.containsKey(task.id) && jobs[task.id]!!.isActive) {
             jobs[task.id]?.cancel()
         }
         else {
-            ldText?.value = "Undo"
             val job = viewModelScope.launch {
                 for (second in 3 downTo  1) {
-                    ldCount?.postValue("$second - ")
+                    taskWrapper.countdown = second
+                    val map = _items.value?.associateBy { it.task.id }?.toMutableMap()
+                    map!![task.id] = TaskWrapper(task, second)
+                    tickLiveData.postValue(map.values.toList())
                     delay(1000)
                 }
                 tasksRepository.deleteTask(taskId = task.id)
             }
             job.invokeOnCompletion {
-                ldText?.value = "Delete"
-                ldCount?.value = ""
+                taskWrapper.countdown = 0
             }
             jobs[task.id] = job
         }
-
-    }
-
-    fun getCountdownText(task : Task) : LiveData<String>? {
-        return deletionEvents?.get(task.id)?.countdownText
-    }
-
-    fun getDeletionEventText(task : Task) : LiveData<String>? {
-        return deletionEvents?.get(task.id)?.buttonText
-    }
-
-    inner class DeletionEvent() {
-        val buttonText = MutableLiveData("Delete")
-        val countdownText = MutableLiveData("adasda")
     }
 }
 

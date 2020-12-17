@@ -26,11 +26,14 @@ import android.view.ViewGroup
 import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.example.android.architecture.blueprints.todoapp.EventObserver
 import com.example.android.architecture.blueprints.todoapp.R
 import com.example.android.architecture.blueprints.todoapp.data.Task
+import com.example.android.architecture.blueprints.todoapp.data.TaskWrapper
 import com.example.android.architecture.blueprints.todoapp.databinding.TasksFragBinding
 import com.example.android.architecture.blueprints.todoapp.util.getViewModelFactory
 import com.example.android.architecture.blueprints.todoapp.util.setupRefreshLayout
@@ -159,6 +162,9 @@ class TasksFragment : Fragment() {
         if (viewModel != null) {
             listAdapter = TasksAdapter(viewModel)
             viewDataBinding.tasksList.adapter = listAdapter
+            viewModel.tickLiveData.observe(viewLifecycleOwner, Observer {
+                listAdapter.submitList(it)
+            })
         } else {
             Timber.w("ViewModel not initialized when attempting to set up adapter.")
         }

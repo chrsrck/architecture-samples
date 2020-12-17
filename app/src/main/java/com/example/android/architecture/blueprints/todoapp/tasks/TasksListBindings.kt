@@ -20,12 +20,13 @@ import android.widget.TextView
 import androidx.databinding.BindingAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.architecture.blueprints.todoapp.data.Task
+import com.example.android.architecture.blueprints.todoapp.data.TaskWrapper
 
 /**
  * [BindingAdapter]s for the [Task]s list.
  */
 @BindingAdapter("app:items")
-fun setItems(listView: RecyclerView, items: List<Task>?) {
+fun setItems(listView: RecyclerView, items: List<TaskWrapper>?) {
     items?.let {
         (listView.adapter as TasksAdapter).submitList(items)
     }
