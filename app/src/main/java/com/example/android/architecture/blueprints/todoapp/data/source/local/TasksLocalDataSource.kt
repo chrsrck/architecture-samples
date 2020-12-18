@@ -106,4 +106,8 @@ class TasksLocalDataSource internal constructor(
     override suspend fun deleteTask(taskId: String) = withContext<Unit>(ioDispatcher) {
         tasksDao.deleteTaskById(taskId)
     }
+
+    override suspend fun updateCountdown(task: Task, countdown : Int) = withContext(ioDispatcher) {
+        tasksDao.updateCountdown(task.id, countdown)
+    }
 }

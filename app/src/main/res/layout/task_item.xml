@@ -22,8 +22,8 @@
         <import type="android.widget.CompoundButton" />
 
         <variable
-            name="taskWrapper"
-            type="com.example.android.architecture.blueprints.todoapp.data.TaskWrapper" />
+            name="task"
+            type="com.example.android.architecture.blueprints.todoapp.data.Task" />
 
         <variable
             name="viewmodel"
@@ -38,15 +38,15 @@
         android:paddingRight="@dimen/activity_horizontal_margin"
         android:paddingBottom="@dimen/list_item_padding"
         android:paddingTop="@dimen/list_item_padding"
-        android:onClick="@{() -> viewmodel.openTask(taskWrapper.task.id)}">
+        android:onClick="@{() -> viewmodel.openTask(task.id)}">
 
         <CheckBox
             android:id="@+id/complete_checkbox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:onClick="@{(view) -> viewmodel.completeTask(taskWrapper.task, ((CompoundButton)view).isChecked())}"
-            android:checked="@{taskWrapper.task.completed}"
+            android:onClick="@{(view) -> viewmodel.completeTask(task, ((CompoundButton)view).isChecked())}"
+            android:checked="@{task.completed}"
 
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -61,8 +61,8 @@
             android:layout_marginLeft="@dimen/activity_horizontal_margin"
             android:layout_marginStart="@dimen/activity_horizontal_margin"
             android:textAppearance="@style/TextAppearance.AppCompat.Title"
-            android:text="@{taskWrapper.task.titleForList}"
-            app:completedTask="@{taskWrapper.task.completed}"
+            android:text="@{task.titleForList}"
+            app:completedTask="@{task.completed}"
 
             app:layout_constraintLeft_toRightOf="@id/complete_checkbox"
             app:layout_constraintTop_toTopOf="parent"
@@ -74,7 +74,7 @@
             android:id="@+id/countdown_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@{taskWrapper.countdownText}"
+            android:text="@{task.countdownText}"
             tools:text="3 - "
 
             app:layout_constraintTop_toTopOf="parent"
@@ -89,8 +89,8 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:text="@{taskWrapper.buttonText}"
-            android:onClick="@{() -> viewmodel.deleteItem(taskWrapper)}"
+            android:text="@{task.buttonText}"
+            android:onClick="@{() -> viewmodel.deleteItem(task)}"
             />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

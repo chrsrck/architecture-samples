@@ -32,7 +32,6 @@ import com.example.android.architecture.blueprints.todoapp.R
 import com.example.android.architecture.blueprints.todoapp.data.Result
 import com.example.android.architecture.blueprints.todoapp.data.Result.Success
 import com.example.android.architecture.blueprints.todoapp.data.Task
-import com.example.android.architecture.blueprints.todoapp.data.TaskWrapper
 import com.example.android.architecture.blueprints.todoapp.data.source.TasksDataSource
 import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepository
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ACTIVE_TASKS
@@ -53,7 +52,7 @@ class TasksViewModel(
 
     private val _forceUpdate = MutableLiveData<Boolean>(false)
 
-    private val _items: LiveData<List<TaskWrapper>> = _forceUpdate.switchMap { forceUpdate ->
+    private val _items: LiveData<List<Task>> = _forceUpdate.switchMap { forceUpdate ->
         if (forceUpdate) {
             _dataLoading.value = true
             viewModelScope.launch {
@@ -67,7 +66,7 @@ class TasksViewModel(
         }
     }
 
-    val items: LiveData<List<TaskWrapper>> = _items
+    val items: LiveData<List<Task>> = _items
 
     private val _dataLoading = MutableLiveData<Boolean>()
     val dataLoading: LiveData<Boolean> = _dataLoading
@@ -201,16 +200,14 @@ class TasksViewModel(
         _snackbarText.value = Event(message)
     }
 
-    private fun filterTasks(tasksResult: Result<List<Task>>): LiveData<List<TaskWrapper>> {
+    private fun filterTasks(tasksResult: Result<List<Task>>): LiveData<List<Task>> {
         // TODO: This is a good case for liveData builder. Replace when stable.
-        val result = MutableLiveData<List<TaskWrapper>>()
+        val result = MutableLiveData<List<Task>>()
 
         if (tasksResult is Success) {
             isDataLoadingError.value = false
             viewModelScope.launch {
-                val filtered = filterItems(tasksResult.data, getSavedFilterType())
-                result.value = filtered.map { TaskWrapper(it, 0) }
-
+                result.value = filterItems(tasksResult.data, getSavedFilterType())
             }
         } else {
             result.value = emptyList()
@@ -254,11 +251,9 @@ class TasksViewModel(
     }
 
     private val jobs: HashMap<String, Job> = HashMap()
-    val tickLiveData : MutableLiveData<List<TaskWrapper>> = MutableLiveData()
+    val tickLiveData : MutableLiveData<List<Task>> = MutableLiveData()
 
-    fun deleteItem(taskWrapper: TaskWrapper) {
-        val task = taskWrapper.task
-        val map = _items.value?.associateBy { it.task.id }?.toMutableMap()
+    fun deleteItem(task: Task) {
 
         if (jobs.containsKey(task.id) && jobs[task.id]!!.isActive) {
             jobs[task.id]?.cancel()
@@ -266,30 +261,19 @@ class TasksViewModel(
         else {
             val job = viewModelScope.launch {
                 for (second in 3 downTo  1) {
-                    taskWrapper.countdown = second
-                    map!![task.id] = TaskWrapper(task, second)
-                    tickLiveData.postValue(map.values.toList())
+                    tasksRepository.updateCountdown(task, second)
                     delay(1000)
                 }
                 tasksRepository.deleteTask(taskId = task.id)
             }
             job.invokeOnCompletion {
-                map!![task.id] = TaskWrapper(task, 0)
-                tickLiveData.postValue(map.values.toList())
+                viewModelScope.launch {
+                    tasksRepository.updateCountdown(task, 0)
+                }
                 jobs.remove(task.id)
             }
             jobs[task.id] = job
         }
-    }
-
-    @Override
-    override fun onCleared() {
-        for (job in jobs.values) {
-            if (job.isActive)
-                job.cancel()
-        }
-
-        super.onCleared()
     }
 }
 
