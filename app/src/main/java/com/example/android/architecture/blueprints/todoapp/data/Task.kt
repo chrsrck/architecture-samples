@@ -34,8 +34,18 @@ data class Task @JvmOverloads constructor(
     @ColumnInfo(name = "title") var title: String = "",
     @ColumnInfo(name = "description") var description: String = "",
     @ColumnInfo(name = "completed") var isCompleted: Boolean = false,
-    @PrimaryKey @ColumnInfo(name = "entryid") var id: String = UUID.randomUUID().toString()
-) {
+    @PrimaryKey @ColumnInfo(name = "entryid") var id: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "countdown") var countdown : Int = 0
+    ) {
+
+    val buttonText : String
+        get() = if (isCountDownFinished) "Delete" else "Undo"
+
+    val countdownText : String
+        get() = if (isCountDownFinished) "" else "$countdown - "
+
+    val isCountDownFinished : Boolean
+        get() = countdown == 0
 
     val titleForList: String
         get() = if (title.isNotEmpty()) title else description

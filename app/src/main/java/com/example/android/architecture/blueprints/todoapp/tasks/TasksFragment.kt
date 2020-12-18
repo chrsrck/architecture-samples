@@ -17,17 +17,14 @@
 package com.example.android.architecture.blueprints.todoapp.tasks
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.RecyclerView.ItemAnimator
+import androidx.recyclerview.widget.SimpleItemAnimator
 import com.example.android.architecture.blueprints.todoapp.EventObserver
 import com.example.android.architecture.blueprints.todoapp.R
 import com.example.android.architecture.blueprints.todoapp.data.Task
@@ -38,6 +35,7 @@ import com.example.android.architecture.blueprints.todoapp.util.setupSnackbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import timber.log.Timber
+
 
 /**
  * Display a grid of [Task]s. User can choose to view all, active or completed tasks.
@@ -53,9 +51,9 @@ class TasksFragment : Fragment() {
     private lateinit var listAdapter: TasksAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View? {
         viewDataBinding = TasksFragBinding.inflate(inflater, container, false).apply {
             viewmodel = viewModel
@@ -120,11 +118,11 @@ class TasksFragment : Fragment() {
 
             setOnMenuItemClickListener {
                 viewModel.setFiltering(
-                    when (it.itemId) {
-                        R.id.active -> TasksFilterType.ACTIVE_TASKS
-                        R.id.completed -> TasksFilterType.COMPLETED_TASKS
-                        else -> TasksFilterType.ALL_TASKS
-                    }
+                        when (it.itemId) {
+                            R.id.active -> TasksFilterType.ACTIVE_TASKS
+                            R.id.completed -> TasksFilterType.COMPLETED_TASKS
+                            else -> TasksFilterType.ALL_TASKS
+                        }
                 )
                 true
             }
@@ -143,8 +141,8 @@ class TasksFragment : Fragment() {
     private fun navigateToAddNewTask() {
         val action = TasksFragmentDirections
             .actionTasksFragmentToAddEditTaskFragment(
-                null,
-                resources.getString(R.string.add_task)
+                    null,
+                    resources.getString(R.string.add_task)
             )
         findNavController().navigate(action)
     }
@@ -158,7 +156,13 @@ class TasksFragment : Fragment() {
         val viewModel = viewDataBinding.viewmodel
         if (viewModel != null) {
             listAdapter = TasksAdapter(viewModel)
+            listAdapter.setHasStableIds(true)
             viewDataBinding.tasksList.adapter = listAdapter
+
+            val animator = viewDataBinding.tasksList.itemAnimator
+            if (animator is SimpleItemAnimator) {
+                animator.supportsChangeAnimations = false
+            }
         } else {
             Timber.w("ViewModel not initialized when attempting to set up adapter.")
         }

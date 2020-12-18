@@ -161,6 +161,13 @@ class DefaultTasksRepository(
         }
     }
 
+    override suspend fun updateCountdown(task: Task, countdown: Int) {
+        coroutineScope {
+            launch { tasksRemoteDataSource.updateCountdown(task, countdown) }
+            launch { tasksLocalDataSource.updateCountdown(task, countdown) }
+        }
+    }
+
     private suspend fun getTaskWithId(id: String): Result<Task> {
         return tasksLocalDataSource.getTask(id)
     }

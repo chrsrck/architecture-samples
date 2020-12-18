@@ -111,4 +111,11 @@ interface TasksDao {
      */
     @Query("DELETE FROM Tasks WHERE completed = 1")
     suspend fun deleteCompletedTasks(): Int
+
+    /**
+     *
+     */
+    @Query("UPDATE tasks SET countdown = :countdown WHERE entryid = :taskId")
+    suspend fun updateCountdown(taskId: String, countdown: Int)
+
 }

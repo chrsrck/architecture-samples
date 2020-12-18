@@ -15,7 +15,7 @@
  */
 package com.example.android.architecture.blueprints.todoapp.tasks
 
-import android.database.Observable
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
@@ -36,7 +36,6 @@ import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepo
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ACTIVE_TASKS
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ALL_TASKS
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.COMPLETED_TASKS
-import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -60,13 +59,18 @@ class TasksViewModel(
             }
         }
         tasksRepository.observeTasks().distinctUntilChanged().switchMap {
-            filterTasks(it)
+            Log.d(this.javaClass.simpleName, "Tasks respository distinct until change switch map called")
+            val ld = filterTasks(it)
+            ld.value?.forEach { it ->
+                if (!it.isCountDownFinished && !activeJobs.containsKey(it.id)) {
+                    activeJobs[it.id] = startTimer(it)
+                }
+            }
+            ld
         }
     }
 
     val items: LiveData<List<Task>> = _items
-
-    private val deletionEvents : HashMap<String, DeletionEvent> = HashMap()
 
     private val _dataLoading = MutableLiveData<Boolean>()
     val dataLoading: LiveData<Boolean> = _dataLoading
@@ -105,7 +109,7 @@ class TasksViewModel(
     init {
         // Set initial state
         setFiltering(getSavedFilterType())
-        loadTasks(true)
+//        loadTasks(true)
     }
 
     /**
@@ -207,12 +211,7 @@ class TasksViewModel(
         if (tasksResult is Success) {
             isDataLoadingError.value = false
             viewModelScope.launch {
-                val filteritems = filterItems(tasksResult.data, getSavedFilterType())
-                result.value = filteritems
-                for (item in filteritems) {
-                    deletionEvents.put(item.id, DeletionEvent())
-                }
-
+                result.value = filterItems(tasksResult.data, getSavedFilterType())
             }
         } else {
             result.value = emptyList()
@@ -255,45 +254,35 @@ class TasksViewModel(
         return savedStateHandle.get(TASKS_FILTER_SAVED_STATE_KEY) ?: ALL_TASKS
     }
 
-    private val jobs: HashMap<String, Job> = HashMap()
+    private val activeJobs: HashMap<String, Job> = HashMap()
 
-    fun deleteItem(task : Task) {
-        val ldText = deletionEvents[task.id]?.buttonText
-        val ldCount = deletionEvents[task.id]?.countdownText
-
-
-        if (jobs.containsKey(task.id) && jobs[task.id]!!.isActive) {
-            jobs[task.id]?.cancel()
+    fun deleteItem(task: Task) {
+        if (activeJobs.containsKey(task.id) && activeJobs[task.id]!!.isActive) {
+           stopTimer(task)
         }
         else {
-            ldText?.value = "Undo"
-            val job = viewModelScope.launch {
-                for (second in 3 downTo  1) {
-                    ldCount?.postValue("$second - ")
-                    delay(1000)
-                }
-                tasksRepository.deleteTask(taskId = task.id)
-            }
-            job.invokeOnCompletion {
-                ldText?.value = "Delete"
-                ldCount?.value = ""
-            }
-            jobs[task.id] = job
+            activeJobs[task.id] = startTimer(task)
         }
-
     }
 
-    fun getCountdownText(task : Task) : LiveData<String>? {
-        return deletionEvents?.get(task.id)?.countdownText
+    private fun stopTimer(task: Task) {
+        activeJobs[task.id]?.cancel()
+        viewModelScope.launch {
+            tasksRepository.updateCountdown(task, 0)
+        }
     }
 
-    fun getDeletionEventText(task : Task) : LiveData<String>? {
-        return deletionEvents?.get(task.id)?.buttonText
-    }
-
-    inner class DeletionEvent() {
-        val buttonText = MutableLiveData("Delete")
-        val countdownText = MutableLiveData("adasda")
+    private fun startTimer(task : Task) : Job {
+        val countdown = if (task.countdown == 0) 3 else task.countdown
+        val job = viewModelScope.launch {
+            for (second in countdown downTo  1) {
+                tasksRepository.updateCountdown(task, second)
+                delay(1000)
+            }
+            tasksRepository.deleteTask(taskId = task.id)
+        }
+        job.invokeOnCompletion { activeJobs.remove(task.id) }
+        return job
     }
 }
 
