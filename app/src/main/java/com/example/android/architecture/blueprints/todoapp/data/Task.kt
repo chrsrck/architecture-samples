@@ -36,7 +36,7 @@ data class Task @JvmOverloads constructor(
     @ColumnInfo(name = "description") var description: String = "",
     @ColumnInfo(name = "completed") var isCompleted: Boolean = false,
     @PrimaryKey @ColumnInfo(name = "entryid") var id: String = UUID.randomUUID().toString(),
-    @ColumnInfo(name = "countdown") var countdown : Int = 0
+    @ColumnInfo(name = "countdown") var countdown : Int = 0 // saved countdown in Room DB for persistence - Christopher
     ) {
 
     val buttonText : Int

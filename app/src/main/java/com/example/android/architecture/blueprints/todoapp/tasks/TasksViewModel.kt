@@ -61,6 +61,11 @@ class TasksViewModel(
         tasksRepository.observeTasks().distinctUntilChanged().switchMap {
             Log.d(this.javaClass.simpleName, "Tasks respository distinct until change switch map called")
             val ld = filterTasks(it)
+            /*
+             Upon the screen's restart after it has been backgrounded or killed
+             This resumes any countdowns the user might have started by creating
+             new timers from the Room saved countdown timer. - Christopher
+             */
             ld.value?.forEach { it ->
                 if (!it.isCountDownFinished && !activeJobs.containsKey(it.id)) {
                     activeJobs[it.id] = startTimer(it)
@@ -253,6 +258,27 @@ class TasksViewModel(
     private fun getSavedFilterType() : TasksFilterType {
         return savedStateHandle.get(TASKS_FILTER_SAVED_STATE_KEY) ?: ALL_TASKS
     }
+
+    /*
+
+    The screen's timers are represented by Kotlin coroutines.
+    The coroutines are bound to the fragment's lifecyle via viewmodel scope extension.
+    This allows the timers to continue even when the original viewholder no longer exists
+    (ex. scrolling, filtering for completed) and then return to the new ticked-time when rebound.
+    Also prevents memory leaks.
+
+    The timer coroutines are kept in a HashMap for O(1) access. The task's UUID can act as the
+    key because the chance for collision is almost impossible.
+
+    Viewholders onClick is bound to delete item function. See task_item.xml
+
+    Timer countdown updates are done via Room. This allows us to use the existing ListUpdater
+    submit list + DiffUtil logic to handle the binding for which tasks need to update the timer text
+    & button text on and task deletion. Room will generate a new task list live data that the submit
+    In addition, it lets the timer countdown restore properly & resume after the user has background
+    or killed the app.
+    - Christopher
+     */
 
     private val activeJobs: HashMap<String, Job> = HashMap()
 

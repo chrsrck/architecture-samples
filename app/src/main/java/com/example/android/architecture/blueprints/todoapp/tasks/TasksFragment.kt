@@ -159,7 +159,7 @@ class TasksFragment : Fragment() {
             listAdapter.setHasStableIds(true)
             viewDataBinding.tasksList.adapter = listAdapter
 
-            val animator = viewDataBinding.tasksList.itemAnimator
+            val animator = viewDataBinding.tasksList.itemAnimator // prevents flashing animation for onNotifyItemChange by listAdapter - Christopher
             if (animator is SimpleItemAnimator) {
                 animator.supportsChangeAnimations = false
             }

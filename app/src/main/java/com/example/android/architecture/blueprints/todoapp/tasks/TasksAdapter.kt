@@ -31,6 +31,8 @@ import java.util.*
 class TasksAdapter(private val viewModel: TasksViewModel) :
     ListAdapter<Task, ViewHolder>(TaskDiffCallback()) {
 
+    // prevents flashing animation for onNotifyItemChange by listAdapter - Christopher
+    // leastSignifigantBits to fit into 64 bit long, collision still within 1 in a billions
     override fun getItemId(position: Int): Long {
         val task = getItem(position)
         val id = task.id
