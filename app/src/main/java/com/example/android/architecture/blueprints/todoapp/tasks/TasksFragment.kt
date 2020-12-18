@@ -160,9 +160,6 @@ class TasksFragment : Fragment() {
         if (viewModel != null) {
             listAdapter = TasksAdapter(viewModel)
             viewDataBinding.tasksList.adapter = listAdapter
-            viewModel.tickLiveData.observe(viewLifecycleOwner, Observer {
-                listAdapter.submitList(it)
-            })
         } else {
             Timber.w("ViewModel not initialized when attempting to set up adapter.")
         }

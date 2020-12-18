@@ -251,7 +251,6 @@ class TasksViewModel(
     }
 
     private val jobs: HashMap<String, Job> = HashMap()
-    val tickLiveData : MutableLiveData<List<Task>> = MutableLiveData()
 
     fun deleteItem(task: Task) {
 
