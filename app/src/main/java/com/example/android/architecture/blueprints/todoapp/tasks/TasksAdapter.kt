@@ -20,10 +20,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.android.architecture.blueprints.todoapp.data.Task
 import com.example.android.architecture.blueprints.todoapp.data.TaskWrapper
 import com.example.android.architecture.blueprints.todoapp.databinding.TaskItemBinding
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksAdapter.ViewHolder
+import java.util.*
 
 /**
  * Adapter for the task list. Has a reference to the [TasksViewModel] to send actions back to it.
@@ -31,9 +31,18 @@ import com.example.android.architecture.blueprints.todoapp.tasks.TasksAdapter.Vi
 class TasksAdapter(private val viewModel: TasksViewModel) :
     ListAdapter<TaskWrapper, ViewHolder>(TaskDiffCallback()) {
 
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val taskWrapper = getItem(position)
+        val id = taskWrapper.task.id
+        return UUID.fromString(id).leastSignificantBits
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
-
         holder.bind(viewModel, item)
     }
 

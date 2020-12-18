@@ -16,6 +16,7 @@
 package com.example.android.architecture.blueprints.todoapp.tasks
 
 import android.database.Observable
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
@@ -61,6 +62,7 @@ class TasksViewModel(
             }
         }
         tasksRepository.observeTasks().distinctUntilChanged().switchMap {
+            Log.d(this.javaClass.simpleName, "Tasks respository distinct until change switch map called")
             filterTasks(it)
         }
     }
@@ -256,6 +258,7 @@ class TasksViewModel(
 
     fun deleteItem(taskWrapper: TaskWrapper) {
         val task = taskWrapper.task
+        val map = _items.value?.associateBy { it.task.id }?.toMutableMap()
 
         if (jobs.containsKey(task.id) && jobs[task.id]!!.isActive) {
             jobs[task.id]?.cancel()
@@ -264,7 +267,6 @@ class TasksViewModel(
             val job = viewModelScope.launch {
                 for (second in 3 downTo  1) {
                     taskWrapper.countdown = second
-                    val map = _items.value?.associateBy { it.task.id }?.toMutableMap()
                     map!![task.id] = TaskWrapper(task, second)
                     tickLiveData.postValue(map.values.toList())
                     delay(1000)
@@ -272,10 +274,22 @@ class TasksViewModel(
                 tasksRepository.deleteTask(taskId = task.id)
             }
             job.invokeOnCompletion {
-                taskWrapper.countdown = 0
+                map!![task.id] = TaskWrapper(task, 0)
+                tickLiveData.postValue(map.values.toList())
+                jobs.remove(task.id)
             }
             jobs[task.id] = job
         }
+    }
+
+    @Override
+    override fun onCleared() {
+        for (job in jobs.values) {
+            if (job.isActive)
+                job.cancel()
+        }
+
+        super.onCleared()
     }
 }
 
