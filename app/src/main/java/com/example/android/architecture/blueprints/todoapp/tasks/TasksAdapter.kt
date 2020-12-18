@@ -31,10 +31,6 @@ import java.util.*
 class TasksAdapter(private val viewModel: TasksViewModel) :
     ListAdapter<Task, ViewHolder>(TaskDiffCallback()) {
 
-    init {
-        setHasStableIds(true)
-    }
-
     override fun getItemId(position: Int): Long {
         val task = getItem(position)
         val id = task.id
