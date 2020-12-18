@@ -14,8 +14,9 @@
   ~ limitations under the License.
   -->
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    >
     <data>
 
         <import type="android.widget.CompoundButton" />
@@ -29,7 +30,7 @@
             type="com.example.android.architecture.blueprints.todoapp.tasks.TasksViewModel" />
     </data>
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="?android:attr/listPreferredItemHeight"
         android:orientation="horizontal"
@@ -45,17 +46,51 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:onClick="@{(view) -> viewmodel.completeTask(task, ((CompoundButton)view).isChecked())}"
-            android:checked="@{task.completed}" />
+            android:checked="@{task.completed}"
+
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            />
 
         <TextView
             android:id="@+id/title_text"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginLeft="@dimen/activity_horizontal_margin"
             android:layout_marginStart="@dimen/activity_horizontal_margin"
             android:textAppearance="@style/TextAppearance.AppCompat.Title"
             android:text="@{task.titleForList}"
-            app:completedTask="@{task.completed}" />
-    </LinearLayout>
+            app:completedTask="@{task.completed}"
+
+            app:layout_constraintLeft_toRightOf="@id/complete_checkbox"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="Title text"
+            />
+
+        <TextView
+            android:id="@+id/countdown_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@{task.countdownText}"
+            tools:text="3 - "
+
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/deleteButton"
+            />
+
+        <Button
+            android:id="@+id/deleteButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="@{task.buttonText}"
+            android:onClick="@{() -> viewmodel.deleteItem(task)}"
+            />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

@@ -15,6 +15,7 @@
  */
 package com.example.android.architecture.blueprints.todoapp.tasks
 
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
@@ -35,6 +36,8 @@ import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepo
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ACTIVE_TASKS
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.ALL_TASKS
 import com.example.android.architecture.blueprints.todoapp.tasks.TasksFilterType.COMPLETED_TASKS
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -55,7 +58,21 @@ class TasksViewModel(
                 _dataLoading.value = false
             }
         }
-        tasksRepository.observeTasks().distinctUntilChanged().switchMap { filterTasks(it) }
+        tasksRepository.observeTasks().distinctUntilChanged().switchMap {
+            Log.d(this.javaClass.simpleName, "Tasks respository distinct until change switch map called")
+            val ld = filterTasks(it)
+            /*
+             Upon the screen's restart after it has been backgrounded or killed
+             This resumes any countdowns the user might have started by creating
+             new timers from the Room saved countdown timer. - Christopher
+             */
+            ld.value?.forEach { it ->
+                if (!it.isCountDownFinished && !activeJobs.containsKey(it.id)) {
+                    activeJobs[it.id] = startTimer(it)
+                }
+            }
+            ld
+        }
     }
 
     val items: LiveData<List<Task>> = _items
@@ -97,7 +114,7 @@ class TasksViewModel(
     init {
         // Set initial state
         setFiltering(getSavedFilterType())
-        loadTasks(true)
+//        loadTasks(true)
     }
 
     /**
@@ -240,6 +257,58 @@ class TasksViewModel(
 
     private fun getSavedFilterType() : TasksFilterType {
         return savedStateHandle.get(TASKS_FILTER_SAVED_STATE_KEY) ?: ALL_TASKS
+    }
+
+    /*
+
+    The screen's timers are represented by Kotlin coroutines.
+    The coroutines are bound to the fragment's lifecyle via viewmodel scope extension.
+    This allows the timers to continue even when the original viewholder no longer exists
+    (ex. scrolling, filtering for completed) and then return to the new ticked-time when rebound.
+    Also prevents memory leaks.
+
+    The timer coroutines are kept in a HashMap for O(1) access. The task's UUID can act as the
+    key because the chance for collision is almost impossible.
+
+    Viewholders onClick is bound to delete item function. See task_item.xml
+
+    Timer countdown updates are done via Room. This allows us to use the existing ListUpdater
+    submit list + DiffUtil logic to handle the binding for which tasks need to update the timer text
+    & button text on and task deletion. Room will generate a new task list live data that the submit
+    In addition, it lets the timer countdown restore properly & resume after the user has background
+    or killed the app.
+    - Christopher
+     */
+
+    private val activeJobs: HashMap<String, Job> = HashMap()
+
+    fun deleteItem(task: Task) {
+        if (activeJobs.containsKey(task.id) && activeJobs[task.id]!!.isActive) {
+           stopTimer(task)
+        }
+        else {
+            activeJobs[task.id] = startTimer(task)
+        }
+    }
+
+    private fun stopTimer(task: Task) {
+        activeJobs[task.id]?.cancel()
+        viewModelScope.launch {
+            tasksRepository.updateCountdown(task, 0)
+        }
+    }
+
+    private fun startTimer(task : Task) : Job {
+        val countdown = if (task.countdown == 0) 3 else task.countdown
+        val job = viewModelScope.launch {
+            for (second in countdown downTo  1) {
+                tasksRepository.updateCountdown(task, second)
+                delay(1000)
+            }
+            tasksRepository.deleteTask(taskId = task.id)
+        }
+        job.invokeOnCompletion { activeJobs.remove(task.id) }
+        return job
     }
 }
 

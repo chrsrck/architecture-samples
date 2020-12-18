@@ -18,6 +18,7 @@ package com.example.android.architecture.blueprints.todoapp.data
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.android.architecture.blueprints.todoapp.R
 import java.util.UUID
 
 /**
@@ -34,8 +35,18 @@ data class Task @JvmOverloads constructor(
     @ColumnInfo(name = "title") var title: String = "",
     @ColumnInfo(name = "description") var description: String = "",
     @ColumnInfo(name = "completed") var isCompleted: Boolean = false,
-    @PrimaryKey @ColumnInfo(name = "entryid") var id: String = UUID.randomUUID().toString()
-) {
+    @PrimaryKey @ColumnInfo(name = "entryid") var id: String = UUID.randomUUID().toString(),
+    @ColumnInfo(name = "countdown") var countdown : Int = 0 // saved countdown in Room DB for persistence - Christopher
+    ) {
+
+    val buttonText : Int
+        get() = if (isCountDownFinished) R.string.delete else R.string.undo
+
+    val countdownText : String
+        get() = if (isCountDownFinished) "" else "$countdown - "
+
+    val isCountDownFinished : Boolean
+        get() = countdown == 0
 
     val titleForList: String
         get() = if (title.isNotEmpty()) title else description
