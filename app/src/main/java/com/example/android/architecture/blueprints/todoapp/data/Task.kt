@@ -39,10 +39,13 @@ data class Task @JvmOverloads constructor(
     ) {
 
     val buttonText : String
-        get() = if (countdown == 0) "Delete" else "Undo"
+        get() = if (isCountDownFinished) "Delete" else "Undo"
 
     val countdownText : String
-        get() = if (countdown == 0) "" else "$countdown - "
+        get() = if (isCountDownFinished) "" else "$countdown - "
+
+    val isCountDownFinished : Boolean
+        get() = countdown == 0
 
     val titleForList: String
         get() = if (title.isNotEmpty()) title else description
