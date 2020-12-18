@@ -123,4 +123,9 @@ object TasksRemoteDataSource : TasksDataSource {
     override suspend fun deleteTask(taskId: String) {
         TASKS_SERVICE_DATA.remove(taskId)
     }
+
+    override suspend fun updateCountdown(task : Task, countdown : Int) {
+
+    }
+
 }
