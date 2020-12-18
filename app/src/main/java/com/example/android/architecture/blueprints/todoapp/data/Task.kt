@@ -18,6 +18,7 @@ package com.example.android.architecture.blueprints.todoapp.data
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.android.architecture.blueprints.todoapp.R
 import java.util.UUID
 
 /**
@@ -38,8 +39,8 @@ data class Task @JvmOverloads constructor(
     @ColumnInfo(name = "countdown") var countdown : Int = 0
     ) {
 
-    val buttonText : String
-        get() = if (isCountDownFinished) "Delete" else "Undo"
+    val buttonText : Int
+        get() = if (isCountDownFinished) R.string.delete else R.string.undo
 
     val countdownText : String
         get() = if (isCountDownFinished) "" else "$countdown - "
